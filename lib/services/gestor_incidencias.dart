@@ -12,7 +12,7 @@ class GestorIncidencias {
     incidencias = await datos.leer();
     // BUG-003 (original): el contador se calculaba solo una vez al iniciar.
     // cantidadPendientes =
-    //     incidencias.where((x) => x.estado == 'Pendiente').length;
+    //      incidencias.where((x) => x.estado == 'Pendiente').length;
   }
 
   // BUG-002 (original): solo buscaba en el título, distinguía mayúsculas
@@ -31,6 +31,20 @@ class GestorIncidencias {
         .where((x) =>
             x.titulo.toLowerCase().contains(q) ||
             x.descripcion.toLowerCase().contains(q))
+        .toList();
+  }
+
+  // FEAT-002: texto, estado y prioridad se combinan; deben cumplirse todos.
+  // 'Todos' / 'Todas' significa sin filtro. No afecta a los totales (contar).
+  List<Incidencia> filtrar({
+    String texto = '',
+    String estado = 'Todos',
+    String prioridad = 'Todas',
+  }) {
+    return buscar(texto)
+        .where((x) =>
+            (estado == 'Todos' || x.estado == estado) &&
+            (prioridad == 'Todas' || x.prioridad == prioridad))
         .toList();
   }
 

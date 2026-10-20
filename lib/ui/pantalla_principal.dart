@@ -16,11 +16,38 @@ class _PantallaPrincipalState extends State<PantallaPrincipal> {
   bool cargando = true;
   String? error;
   String busqueda = '';
+  // FEAT-002: controlador del buscador y filtros de estado y prioridad
+  final TextEditingController busquedaCtrl = TextEditingController();
+  String estadoFiltro = 'Todos';
+  String prioridadFiltro = 'Todas';
+  final List<String> opcionesEstado = const [
+    'Todos',
+    'Pendiente',
+    'En proceso',
+    'Resuelta'
+  ];
+  final List<String> opcionesPrioridad = ['Todas', ...Incidencia.prioridades];
 
   @override
   void initState() {
     super.initState();
     cargar();
+  }
+
+  @override
+  void dispose() {
+    busquedaCtrl.dispose();
+    super.dispose();
+  }
+
+  // FEAT-002: restablecer texto, estado y prioridad
+  void limpiarFiltros() {
+    busquedaCtrl.clear();
+    setState(() {
+      busqueda = '';
+      estadoFiltro = 'Todos';
+      prioridadFiltro = 'Todas';
+    });
   }
 
   Future<void> cargar() async {
@@ -95,7 +122,12 @@ class _PantallaPrincipalState extends State<PantallaPrincipal> {
 
   @override
   Widget build(BuildContext context) {
-    final items = g.buscar(busqueda);
+    // FEAT-002: texto + estado + prioridad aplicados juntos
+    final items = g.filtrar(
+      texto: busqueda,
+      estado: estadoFiltro,
+      prioridad: prioridadFiltro,
+    );
     return Scaffold(
       appBar: AppBar(
         title: const Text('NexaSoft | Incidencias'),
@@ -174,6 +206,7 @@ class _PantallaPrincipalState extends State<PantallaPrincipal> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 17, vertical: 5),
                           child: TextField(
+                            controller: busquedaCtrl,
                             decoration: const InputDecoration(
                               labelText: 'Buscar incidencias',
                               hintText: 'Ejemplo: WiFi, correo, pantalla',
@@ -183,6 +216,50 @@ class _PantallaPrincipalState extends State<PantallaPrincipal> {
                             onChanged: (texto) =>
                                 setState(() => busqueda = texto),
                           ),
+                        ),
+                        // FEAT-002: filtros de estado y prioridad + botón para restablecer
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 17, vertical: 5),
+                          child: Row(children: [
+                            Expanded(
+                              child: DropdownButtonFormField<String>(
+                                isExpanded: true,
+                                value: estadoFiltro,
+                                decoration: const InputDecoration(
+                                    labelText: 'Estado',
+                                    border: OutlineInputBorder()),
+                                items: opcionesEstado
+                                    .map((e) => DropdownMenuItem(
+                                        value: e, child: Text(e)))
+                                    .toList(),
+                                onChanged: (v) =>
+                                    setState(() => estadoFiltro = v ?? 'Todos'),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: DropdownButtonFormField<String>(
+                                isExpanded: true,
+                                value: prioridadFiltro,
+                                decoration: const InputDecoration(
+                                    labelText: 'Prioridad',
+                                    border: OutlineInputBorder()),
+                                items: opcionesPrioridad
+                                    .map((e) => DropdownMenuItem(
+                                        value: e, child: Text(e)))
+                                    .toList(),
+                                onChanged: (v) => setState(
+                                    () => prioridadFiltro = v ?? 'Todas'),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            OutlinedButton.icon(
+                              onPressed: limpiarFiltros,
+                              icon: const Icon(Icons.filter_alt_off),
+                              label: const Text('Limpiar'),
+                            ),
+                          ]),
                         ),
                         Padding(
                           padding: const EdgeInsets.symmetric(
@@ -195,8 +272,20 @@ class _PantallaPrincipalState extends State<PantallaPrincipal> {
                         ),
                         Expanded(
                           child: items.isEmpty
-                              ? const Center(
-                                  child: Text('No se encontraron incidencias'))
+                              ? Center(
+                                  child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Text(
+                                            'No se encontraron incidencias con los filtros aplicados'),
+                                        const SizedBox(height: 12),
+                                        OutlinedButton(
+                                          onPressed: limpiarFiltros,
+                                          child: const Text(
+                                              'Limpiar búsqueda y filtros'),
+                                        ),
+                                      ]),
+                                )
                               : ListView.builder(
                                   padding: const EdgeInsets.only(
                                       left: 12, right: 12, bottom: 100),
