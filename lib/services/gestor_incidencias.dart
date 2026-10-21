@@ -73,8 +73,25 @@ class GestorIncidencias {
     await datos.guardar(incidencias);
   }
 
-  Future<void> crear(String titulo, String descripcion, String cliente,
-      String categoria) async {
+  // FEAT-001: cambiar la prioridad de una incidencia y conservarla.
+  // Solo acepta Baja, Media o Alta.
+  Future<void> cambiarPrioridad(String id, String prioridad) async {
+    if (!Incidencia.prioridades.contains(prioridad)) {
+      throw ArgumentError('Prioridad no válida: $prioridad');
+    }
+    for (var i = 0; i < incidencias.length; i++) {
+      if (incidencias[i].id == id) {
+        incidencias[i].prioridad = prioridad;
+        break;
+      }
+    }
+    await datos.guardar(incidencias);
+  }
+
+  // FEAT-001: crear() recibe la prioridad (por defecto Media).
+  Future<void> crear(
+      String titulo, String descripcion, String cliente, String categoria,
+      {String prioridad = Incidencia.prioridadInicial}) async {
     final nuevo = Incidencia(
       id: 'INC-${DateTime.now().microsecondsSinceEpoch}',
       titulo: titulo,
@@ -83,6 +100,7 @@ class GestorIncidencias {
       categoria: categoria,
       estado: 'Pendiente',
       fecha: DateTime.now().toIso8601String().split('T').first,
+      prioridad: prioridad,
     );
     incidencias.insert(0, nuevo);
     // BUG-003 (original): incremento manual del contador, ya no se necesita.
